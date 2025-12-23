@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Direção Clínica - HU v8.0</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --col-ocupacao: #0d9488; --col-permanencia: #ea580c; --col-giro: #0284c7;
+            --col-absorcao: #16a34a; --col-conversao: #475569; --col-reinternacao: #7c3aed;
+            --bg-body: #f1f5f9; --text-main: #1e293b; --card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-body); color: var(--text-main); margin: 0; padding: 24px; }
+        
+        .header { 
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); 
+            color: white; padding: 20px 32px; border-radius: 16px; margin-bottom: 24px;
+            box-shadow: var(--card-shadow); display: flex; align-items: center; justify-content: space-between;
+        }
+        .header h1 { margin:0; font-size:1.4rem; font-weight: 700; }
+        .header-tag { background: rgba(255,255,255,0.1); padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 500; }
+
+        .nav-container { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+        .nav-tab { 
+            padding: 10px 20px; border: 1px solid #e2e8f0; background: white; border-radius: 10px; 
+            cursor: pointer; font-weight: 500; color: #64748b; transition: all 0.3s; font-size: 0.875rem;
+        }
+        .nav-tab.active[data-m="ocupacao"] { background: var(--col-ocupacao); color: white; border-color: var(--col-ocupacao); }
+        .nav-tab.active[data-m="permanencia"] { background: var(--col-permanencia); color: white; border-color: var(--col-permanencia); }
+        .nav-tab.active[data-m="giro"] { background: var(--col-giro); color: white; border-color: var(--col-giro); }
+        .nav-tab.active[data-m="absorcao"] { background: var(--col-absorcao); color: white; border-color: var(--col-absorcao); }
+        .nav-tab.active[data-m="conversao"] { background: var(--col-conversao); color: white; border-color: var(--col-conversao); }
+        .nav-tab.active[data-m="reinternacao"] { background: var(--col-reinternacao); color: white; border-color: var(--col-reinternacao); }
+
+        .filter-container { margin-bottom: 24px; display: flex; gap: 4px; background: #e2e8f0; padding: 4px; border-radius: 12px; width: fit-content; }
+        .btn-filter { padding: 8px 24px; border: none; border-radius: 9px; cursor: pointer; font-weight: 600; background: transparent; color: #64748b; font-size: 0.8rem; }
+        .btn-filter.active { background: white; color: var(--text-main); }
+
+        .dashboard-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 24px; }
+        .card { background: white; border-radius: 16px; padding: 24px; box-shadow: var(--card-shadow); display: flex; flex-direction: column; border: 1px solid rgba(226, 232, 240, 0.8); }
+        .col-12 { grid-column: span 12; } .col-8 { grid-column: span 8; } .col-4 { grid-column: span 4; }
+        
+        .card-title { font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: #475569; }
+        .dot { width: 10px; height: 10px; border-radius: 3px; }
+        .kpi-val { font-size: 2.5rem; font-weight: 800; margin-top: 8px; }
+        
+        .footer-credits { margin-top: 30px; text-align: right; font-size: 0.65rem; color: #94a3b8; font-weight: 500; }
+        .val-negative { color: #dc2626 !important; }
+        .val-positive { color: #16a34a !important; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Indicadores Estratégicos HU</h1>
+    <div class="header-tag">Ultima atualização: Dez/2025</div>
+</div>
+
+<div class="nav-container">
+    <button class="nav-tab active" data-m="ocupacao" onclick="changeTab('ocupacao')">Taxa de Ocupação</button>
+    <button class="nav-tab" data-m="permanencia" onclick="changeTab('permanencia')">Permanência</button>
+    <button class="nav-tab" data-m="giro" onclick="changeTab('giro')">Giro de Leito</button>
+    <button class="nav-tab" data-m="absorcao" onclick="changeTab('absorcao')">Absorção Cirúrgica</button>
+    <button class="nav-tab" data-m="conversao" onclick="changeTab('conversao')">Conversão PS</button>
+    <button class="nav-tab" data-m="reinternacao" onclick="changeTab('reinternacao')">Reinternação</button>
+</div>
+
+<div id="filter-area"></div>
+<div id="render-area" class="dashboard-grid"></div>
+
+<div class="footer-credits">Desenvolvido por: Beatryz Rodrigues - Analista Administrativo GEASI</div>
+
+<script>
+    const configNoButtons = { displayModeBar: false, responsive: true };
+    const DB = {
+        meses: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],
+        ocupacao: { color: '#0d9488', v2024: [77.8, 83.1, 84.5, 83.1, 77.0, 77.4, 76.7, 75.7, 75.0, 72.4, 71.2, 69.4], v2025: [71.6, 71.5, 72.9, 75.2, 74.8, 70.2, 71.3, 69.4, 72.0, 72.3, 72.7], labels: ['Cardio', 'U.Coron.', 'Clin.M I', 'Clin.M III', 'Cirúrg.', 'Pediat.', 'UTI Ped', 'UTI 2', 'UTI Ad.', 'Onco'], s2024: [89.1, 73.5, 94.2, 96.5, 76.8, 81.2, 78.5, 72.3, 87.4, 79.9], s2025: [86.8, 77.2, 93.6, 93.9, 73.8, 76.2, 75.8, 79.1, 88.5, 77.0], meta: 85, unit: '%' },
+        permanencia: { color: '#ea580c', v2024: [5.10, 4.95, 4.75, 5.08, 5.13, 5.24, 5.38, 5.03, 5.21, 5.21, 5.08, 5.17], v2025: [5.31, 4.88, 5.50, 5.51, 5.18, 5.11, 4.90, 4.66, 5.35, 4.11, 4.72], labels: ['Clin. M III', 'UTI Ped', 'Onco', 'UTI Ad', 'UTI 2', 'Clin. M I', 'Ped', 'Cardio', 'U.Coron', 'Cirúrg.'], s2024: [6.18, 6.38, 6.31, 5.74, 5.21, 4.92, 3.71, 3.62, 3.03, 1.77], s2025: [8.35, 7.12, 6.69, 5.83, 4.69, 5.26, 3.67, 3.63, 2.94, 1.70], meta: 5.0, unit: ' dias' },
+        giro: { color: '#0284c7', v2024: [4.73, 4.86, 5.52, 4.93, 4.65, 4.45, 4.41, 4.67, 4.31, 4.29, 4.20, 4.15], v2025: [4.18, 4.08, 4.10, 4.10, 4.49, 8.24, 4.53, 4.66, 4.52, 4.73, 4.63], labels: ['Cirúrgica', 'U.Coron', 'Cardio', 'Pediat.', 'Clin. M I', 'UTI 2', 'UTI Ad', 'Clin. M III', 'Onco', 'UTI Ped'], s2024: [13.42, 7.79, 7.53, 6.47, 5.82, 4.63, 4.55, 4.52, 3.65, 3.49], s2025: [14.86, 8.58, 8.16, 7.33, 6.13, 5.68, 5.12, 4.05, 3.96, 3.62], meta: 4.5, unit: ' saídas' },
+        absorcao: { color: '#16a34a', v2024: [49.59, 61.54, 60.87, 50.0, 59.38, 59.7, 59.65, 58.93, 60.99, 64.49, 44.1, 52.53], v2025: [54.55, 44.33, 47.79, 55.0, 55.0, 65.81, 58.87, 49.46, 55.56, 65.44, 55.93], meta: 60, unit: '%' },
+        conversao: { color: '#475569', v2024: [5.13, 3.99, 3.93, 3.97, 4.76, 4.79, 4.55, 5.10, 4.47, 4.59, 4.25, 4.69], v2025: [5.05, 5.13, 4.72, 4.30, 4.14, 4.55, 4.50, 4.78, 4.49], meta: 4.5, unit: '%' },
+        reinternacao: { color: '#7c3aed', v2024: [7.30, 6.48, 6.40, 5.90, 6.15, 5.97, 6.23, 8.43, 5.41, 4.86, 5.67, 5.61], v2025: [5.85, 7.53, 7.38, 6.77, 6.59, 8.20, 5.53, 7.64, 7.80], meta: 6.0, unit: '%' }
+    };
+
+    let activeTab = 'ocupacao';
+    let activeYear = '2025';
+
+    function changeTab(m) { activeTab = m; renderDashboard(); }
+    function setYear(y) { activeYear = y; renderDashboard(); }
+
+    function renderStandard(d) {
+        const area = document.getElementById('render-area');
+        area.innerHTML = `
+            <div class="card col-8"><div class="card-title"><div class="dot" style="background:${d.color}"></div>Evolução Temporal</div><div id="chart-evol" style="height:350px"></div></div>
+            <div class="card col-4" style="align-items:center; justify-content:center; text-align:center;">
+                <div class="card-title" style="align-self: flex-start;"><div class="dot" style="background:${d.color}"></div>Média</div>
+                <div id="chart-gauge" style="height:200px; width:100%;"></div>
+                <div class="kpi-val" style="color:${d.color}" id="kpi-txt">--</div>
+            </div>`;
+        if (d.labels) area.innerHTML += `<div class="card col-12"><div class="card-title"><div class="dot" style="background:${d.color}"></div>Performance Unidades</div><div id="chart-setores" style="height:380px"></div></div>`;
+
+        const metaLine = { x: DB.meses, y: Array(12).fill(d.meta), name: 'Meta', type: 'scatter', mode: 'lines', line: {color: '#ef4444', width: 2, dash: 'dot'} };
+        const metaBar = { x: d.labels, y: Array(d.labels?d.labels.length:0).fill(d.meta), name: 'Meta', type: 'scatter', mode: 'lines', line: {color: '#ef4444', width: 2, dash: 'dot'} };
+
+        let tracesLine = [], tracesBar = [], avgVal = 0;
+        const layout = { margin: {t:30, b:40, l:40, r:10}, font: {family: 'Inter', color: '#64748b'}, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', xaxis: {gridcolor: '#f1f5f9'}, yaxis: {gridcolor: '#f1f5f9'} };
+
+        if (activeYear === '2024') {
+            tracesLine = [{ x: DB.meses, y: d.v2024, name: '2024', type: 'scatter', mode: 'lines+markers+text', text: d.v2024.map(v=>v.toFixed(1)), textposition: 'top center', line: {color: d.color, width:3, shape: 'spline'} }, metaLine];
+            if(d.s2024) tracesBar = [{ x: d.labels, y: d.s2024, type: 'bar', text: d.s2024.map(v=>v.toFixed(1)), textposition: 'outside', marker: {color: d.color} }, metaBar];
+            avgVal = (d.v2024.reduce((a,b)=>a+b,0)/12);
+        } else if (activeYear === '2025') {
+            const v25 = d.v2025.filter(v=>v);
+            tracesLine = [{ x: DB.meses, y: d.v2025, name: '2025', type: 'scatter', mode: 'lines+markers+text', text: d.v2025.map(v=>v?v.toFixed(1):''), textposition: 'top center', line: {color: d.color, width:3, shape: 'spline'} }, metaLine];
+            if(d.s2025) tracesBar = [{ x: d.labels, y: d.s2025, type: 'bar', text: d.s2025.map(v=>v.toFixed(1)), textposition: 'outside', marker: {color: d.color} }, metaBar];
+            avgVal = (v25.reduce((a,b)=>a+b,0)/v25.length);
+        } else {
+            const v25 = d.v2025.filter(v=>v);
+            tracesLine = [{ x: DB.meses, y: d.v2024, name: '2024', type: 'scatter', mode: 'lines', line: {color: '#cbd5e1', width: 2, shape: 'spline'} }, { x: DB.meses, y: d.v2025, name: '2025', type: 'scatter', mode: 'lines+markers+text', text: d.v2025.map(v=>v?v.toFixed(1):''), textposition: 'top center', line: {color: d.color, width:3, shape: 'spline'} }, metaLine];
+            if(d.s2024) tracesBar = [{ x: d.labels, y: d.s2024, name: '24', type: 'bar', text: d.s2024.map(v=>v.toFixed(1)), textposition: 'outside', marker: {color: '#cbd5e1'} }, { x: d.labels, y: d.s2025, name: '25', type: 'bar', text: d.s2025.map(v=>v.toFixed(1)), textposition: 'outside', marker: {color: d.color} }, metaBar];
+            avgVal = (v25.reduce((a,b)=>a+b,0)/v25.length);
+        }
+
+        Plotly.newPlot('chart-evol', tracesLine, {...layout, showlegend: true, legend: {orientation: 'h', y: 1.1}}, configNoButtons);
+        Plotly.newPlot('chart-gauge', [{ type: "indicator", mode: "gauge", value: avgVal, gauge: { axis: { range: [0, (activeTab==='giro'||activeTab==='permanencia'? 15 : 100)] }, bar: { color: d.color }, bgcolor: '#f8fafc' } }], { margin: {t:0, b:0, l:40, r:40}, paper_bgcolor: 'rgba(0,0,0,0)' }, configNoButtons);
+        if (d.labels) Plotly.newPlot('chart-setores', tracesBar, {...layout, barmode: 'group', showlegend: true, legend: {orientation: 'h', y: 1.15}}, configNoButtons);
+        document.getElementById('kpi-txt').innerText = avgVal.toFixed(2) + d.unit;
+    }
+
+    function renderAbsorcao(d) {
+        const area = document.getElementById('render-area');
+        const metaLine = { x: DB.meses, y: Array(12).fill(d.meta), name: 'Meta', type: 'scatter', mode: 'lines', line: {color: '#ef4444', width: 2, dash: 'dot'} };
+        
+        if (activeYear === 'comparativo') {
+            const avg24 = (d.v2024.reduce((a,b)=>a+b,0)/12);
+            const avg25 = (d.v2025.reduce((a,b)=>a+b,0)/d.v2025.length);
+            const variacao = (avg25 - avg24);
+            area.innerHTML = `<div class="card col-4" style="text-align:center"><div class="card-title">2024</div><div class="kpi-val">${avg24.toFixed(2)}%</div></div><div class="card col-4" style="text-align:center"><div class="card-title">2025</div><div class="kpi-val" style="color:${d.color}">${avg25.toFixed(2)}%</div></div><div class="card col-4" style="text-align:center"><div class="card-title">Variação</div><div class="kpi-val ${variacao<0?'val-negative':'val-positive'}">${variacao.toFixed(2)}%</div></div><div class="card col-12"><div id="chart-evol" style="height:350px"></div></div>`;
+            Plotly.newPlot('chart-evol', [{x:DB.meses, y:d.v2024, name:'2024', type:'scatter', mode:'lines+markers+text', text: d.v2024.map(v=>v.toFixed(1)), line:{color:'#cbd5e1', shape: 'spline'}}, {x:DB.meses, y:d.v2025, name:'2025', type:'scatter', mode:'lines+markers+text', text: d.v2025.map(v=>v.toFixed(1)), line:{width:3, color:d.color, shape: 'spline'}}, metaLine], {margin:{t:30,b:40,l:40,r:10}, paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)'}, configNoButtons);
+        } else {
+            const curV = activeYear==='2024'?d.v2024:d.v2025;
+            area.innerHTML = `<div class="card col-12"><div class="card-title">Absorção Geral</div><div id="chart-evol" style="height:350px"></div></div>`;
+            Plotly.newPlot('chart-evol', [{x:DB.meses, y:curV, type:'scatter', mode: 'lines+markers+text', text: curV.map(v=>v), line:{color:d.color, width:3, shape:'spline'}}, metaLine], {margin:{t:30,b:40,l:40,r:10}, paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)'}, configNoButtons);
+        }
+    }
+
+    function renderDashboard() {
+        const d = DB[activeTab];
+        document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+        document.querySelector(`[data-m="${activeTab}"]`).classList.add('active');
+        document.getElementById('filter-area').innerHTML = `<div class="filter-container"><button class="btn-filter ${activeYear==='2024'?'active':''}" onclick="setYear('2024')">2024</button><button class="btn-filter ${activeYear==='2025'?'active':''}" onclick="setYear('2025')">2025</button><button class="btn-filter ${activeYear==='comparativo'?'active':''}" onclick="setYear('comparativo')">Comparativo</button></div>`;
+        if (activeTab === 'absorcao') renderAbsorcao(d); else renderStandard(d);
+    }
+    renderDashboard();
+</script>
+</body>
+</html>
