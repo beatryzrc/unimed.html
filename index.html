@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Direção Clínica - HU v9.0</title>
+    <title>Dashboard Direção Clínica - HU v10.0</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -44,7 +44,11 @@
         
         .card-title { font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: #475569; }
         .dot { width: 10px; height: 10px; border-radius: 3px; }
-        .kpi-val { font-size: 2.5rem; font-weight: 800; margin-top: 8px; }
+        
+        /* Ajuste do Valor Central do Gauge */
+        .gauge-kpi-container { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .kpi-val-main { font-size: 2.8rem; font-weight: 800; margin-top: -50px; z-index: 10; letter-spacing: -0.05em; }
+        .kpi-sub-meta { font-size: 0.75rem; color: #94a3b8; font-weight: 500; margin-top: 5px; }
         
         .footer-credits { margin-top: 30px; text-align: right; font-size: 0.65rem; color: #94a3b8; font-weight: 500; letter-spacing: 0.05em; }
         .val-negative { color: #dc2626 !important; }
@@ -92,41 +96,49 @@
 
     function renderStandard(d) {
         const area = document.getElementById('render-area');
+        const vAtual = activeYear === '2024' ? d.v2024 : d.v2025.filter(v=>v);
+        const avgVal = (vAtual.reduce((a,b)=>a+b,0)/vAtual.length);
+
         area.innerHTML = `
             <div class="card col-8"><div class="card-title"><div class="dot" style="background:${d.color}"></div>Evolução Temporal</div><div id="chart-evol" style="height:350px"></div></div>
-            <div class="card col-4" style="align-items:center; justify-content:center; text-align:center;">
-                <div class="card-title" style="align-self: flex-start;"><div class="dot" style="background:${d.color}"></div>Média Anual</div>
-                <div id="chart-gauge" style="height:200px; width:100%;"></div>
-                <div class="kpi-val" style="color:${d.color}" id="kpi-txt">--</div>
+            <div class="card col-4" style="justify-content: center;">
+                <div class="card-title" style="align-self: flex-start;"><div class="dot" style="background:${d.color}"></div>Média do Período</div>
+                <div class="gauge-kpi-container">
+                    <div id="chart-gauge" style="height:250px; width:100%;"></div>
+                    <div class="kpi-val-main" style="color:${d.color}">${avgVal.toFixed(2)}${d.unit}</div>
+                    <div class="kpi-sub-meta">Meta: ${d.meta}${d.unit}</div>
+                </div>
             </div>`;
         if (d.labels) area.innerHTML += `<div class="card col-12"><div class="card-title"><div class="dot" style="background:${d.color}"></div>Performance Unidades</div><div id="chart-setores" style="height:380px"></div></div>`;
 
-        const metaLine = { x: DB.meses, y: Array(12).fill(d.meta), name: `Meta (${d.meta})`, type: 'scatter', mode: 'lines', line: {color: '#ef4444', width: 2, dash: 'dot'} };
-        const metaBar = { x: d.labels, y: Array(d.labels?d.labels.length:0).fill(d.meta), name: 'Meta', type: 'scatter', mode: 'lines', line: {color: '#ef4444', width: 2, dash: 'dot'} };
+        // Configuração do Gauge Estilizado
+        Plotly.newPlot('chart-gauge', [{
+            type: "indicator", mode: "gauge", value: avgVal,
+            gauge: {
+                axis: { range: [0, (activeTab==='giro'||activeTab==='permanencia'? 15 : 100)], tickwidth: 1, tickcolor: "#cbd5e1", tickfont: {size: 10, color: '#94a3b8'} },
+                bar: { color: d.color, thickness: 0.25 },
+                bgcolor: "#f8fafc", borderwidth: 0
+            }
+        }], { margin: {t:40, b:0, l:40, r:40}, paper_bgcolor: 'rgba(0,0,0,0)' }, configNoButtons);
 
-        let tracesLine = [], tracesBar = [], avgVal = 0;
+        // Gráficos de Evolução e Barras
+        const metaLine = { x: DB.meses, y: Array(12).fill(d.meta), name: `Meta (${d.meta})`, type: 'scatter', mode: 'lines', line: {color: '#ef4444', width: 2, dash: 'dot'} };
         const layout = { margin: {t:30, b:40, l:40, r:10}, font: {family: 'Inter', color: '#64748b'}, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', xaxis: {gridcolor: '#f1f5f9'}, yaxis: {gridcolor: '#f1f5f9'} };
 
+        let tracesLine = [], tracesBar = [];
         if (activeYear === '2024') {
             tracesLine = [{ x: DB.meses, y: d.v2024, name: '2024', type: 'scatter', mode: 'lines+markers+text', text: d.v2024.map(v=>v.toFixed(1)), textposition: 'top center', line: {color: d.color, width:3, shape: 'spline'} }, metaLine];
-            if(d.s2024) tracesBar = [{ x: d.labels, y: d.s2024, type: 'bar', text: d.s2024.map(v=>v.toFixed(1)), textposition: 'outside', marker: {color: d.color} }, metaBar];
-            avgVal = (d.v2024.reduce((a,b)=>a+b,0)/12);
+            if(d.s2024) tracesBar = [{ x: d.labels, y: d.s2024, type: 'bar', text: d.s2024.map(v=>v.toFixed(1)), textposition: 'outside', marker: {color: d.color} }, { x: d.labels, y: Array(d.labels.length).fill(d.meta), name: 'Meta', type: 'scatter', mode: 'lines', line: {color: '#ef4444', dash: 'dot'} }];
         } else if (activeYear === '2025') {
-            const v25 = d.v2025.filter(v=>v);
             tracesLine = [{ x: DB.meses, y: d.v2025, name: '2025', type: 'scatter', mode: 'lines+markers+text', text: d.v2025.map(v=>v?v.toFixed(1):''), textposition: 'top center', line: {color: d.color, width:3, shape: 'spline'} }, metaLine];
-            if(d.s2025) tracesBar = [{ x: d.labels, y: d.s2025, type: 'bar', text: d.s2025.map(v=>v.toFixed(1)), textposition: 'outside', marker: {color: d.color} }, metaBar];
-            avgVal = (v25.reduce((a,b)=>a+b,0)/v25.length);
+            if(d.s2025) tracesBar = [{ x: d.labels, y: d.s2025, type: 'bar', text: d.s2025.map(v=>v.toFixed(1)), textposition: 'outside', marker: {color: d.color} }, { x: d.labels, y: Array(d.labels.length).fill(d.meta), name: 'Meta', type: 'scatter', mode: 'lines', line: {color: '#ef4444', dash: 'dot'} }];
         } else {
-            const v25 = d.v2025.filter(v=>v);
             tracesLine = [{ x: DB.meses, y: d.v2024, name: '2024', type: 'scatter', mode: 'lines', line: {color: '#cbd5e1', width: 2, shape: 'spline'} }, { x: DB.meses, y: d.v2025, name: '2025', type: 'scatter', mode: 'lines+markers+text', text: d.v2025.map(v=>v?v.toFixed(1):''), textposition: 'top center', line: {color: d.color, width:3, shape: 'spline'} }, metaLine];
-            if(d.s2024) tracesBar = [{ x: d.labels, y: d.s2024, name: '24', type: 'bar', text: d.s2024.map(v=>v.toFixed(1)), textposition: 'outside', marker: {color: '#cbd5e1'} }, { x: d.labels, y: d.s2025, name: '25', type: 'bar', text: d.s2025.map(v=>v.toFixed(1)), textposition: 'outside', marker: {color: d.color} }, metaBar];
-            avgVal = (v25.reduce((a,b)=>a+b,0)/v25.length);
+            if(d.s2024) tracesBar = [{ x: d.labels, y: d.s2024, name: '24', type: 'bar', text: d.s2024.map(v=>v.toFixed(1)), textposition: 'outside', marker: {color: '#cbd5e1'} }, { x: d.labels, y: d.s2025, name: '25', type: 'bar', text: d.s2025.map(v=>v.toFixed(1)), textposition: 'outside', marker: {color: d.color} }, { x: d.labels, y: Array(d.labels.length).fill(d.meta), name: 'Meta', type: 'scatter', mode: 'lines', line: {color: '#ef4444', dash: 'dot'} }];
         }
 
         Plotly.newPlot('chart-evol', tracesLine, {...layout, showlegend: true, legend: {orientation: 'h', y: 1.1}}, configNoButtons);
-        Plotly.newPlot('chart-gauge', [{ type: "indicator", mode: "gauge", value: avgVal, gauge: { axis: { range: [0, (activeTab==='giro'||activeTab==='permanencia'? 15 : 100)] }, bar: { color: d.color }, bgcolor: '#f8fafc' } }], { margin: {t:0, b:0, l:40, r:40}, paper_bgcolor: 'rgba(0,0,0,0)' }, configNoButtons);
         if (d.labels) Plotly.newPlot('chart-setores', tracesBar, {...layout, barmode: 'group', showlegend: true, legend: {orientation: 'h', y: 1.15}}, configNoButtons);
-        document.getElementById('kpi-txt').innerText = avgVal.toFixed(2) + d.unit;
     }
 
     function renderAbsorcao(d) {
