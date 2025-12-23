@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Direção Clínica - HU v8.0</title>
+    <title>Dashboard Direção Clínica - HU v9.0</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -46,7 +46,7 @@
         .dot { width: 10px; height: 10px; border-radius: 3px; }
         .kpi-val { font-size: 2.5rem; font-weight: 800; margin-top: 8px; }
         
-        .footer-credits { margin-top: 30px; text-align: right; font-size: 0.65rem; color: #94a3b8; font-weight: 500; }
+        .footer-credits { margin-top: 30px; text-align: right; font-size: 0.65rem; color: #94a3b8; font-weight: 500; letter-spacing: 0.05em; }
         .val-negative { color: #dc2626 !important; }
         .val-positive { color: #16a34a !important; }
     </style>
@@ -55,7 +55,7 @@
 
 <div class="header">
     <h1>Indicadores Estratégicos HU</h1>
-    <div class="header-tag">Ultima atualização: Dez/2025</div>
+    <div class="header-tag">Última atualização: Dez/2025</div>
 </div>
 
 <div class="nav-container">
@@ -70,7 +70,7 @@
 <div id="filter-area"></div>
 <div id="render-area" class="dashboard-grid"></div>
 
-<div class="footer-credits">Desenvolvido por: Beatryz Rodrigues - Analista Administrativo GEASI</div>
+<div class="footer-credits">Beatryz Rodrigues - Analista Administrativo GEASI</div>
 
 <script>
     const configNoButtons = { displayModeBar: false, responsive: true };
@@ -95,13 +95,13 @@
         area.innerHTML = `
             <div class="card col-8"><div class="card-title"><div class="dot" style="background:${d.color}"></div>Evolução Temporal</div><div id="chart-evol" style="height:350px"></div></div>
             <div class="card col-4" style="align-items:center; justify-content:center; text-align:center;">
-                <div class="card-title" style="align-self: flex-start;"><div class="dot" style="background:${d.color}"></div>Média</div>
+                <div class="card-title" style="align-self: flex-start;"><div class="dot" style="background:${d.color}"></div>Média Anual</div>
                 <div id="chart-gauge" style="height:200px; width:100%;"></div>
                 <div class="kpi-val" style="color:${d.color}" id="kpi-txt">--</div>
             </div>`;
         if (d.labels) area.innerHTML += `<div class="card col-12"><div class="card-title"><div class="dot" style="background:${d.color}"></div>Performance Unidades</div><div id="chart-setores" style="height:380px"></div></div>`;
 
-        const metaLine = { x: DB.meses, y: Array(12).fill(d.meta), name: 'Meta', type: 'scatter', mode: 'lines', line: {color: '#ef4444', width: 2, dash: 'dot'} };
+        const metaLine = { x: DB.meses, y: Array(12).fill(d.meta), name: `Meta (${d.meta})`, type: 'scatter', mode: 'lines', line: {color: '#ef4444', width: 2, dash: 'dot'} };
         const metaBar = { x: d.labels, y: Array(d.labels?d.labels.length:0).fill(d.meta), name: 'Meta', type: 'scatter', mode: 'lines', line: {color: '#ef4444', width: 2, dash: 'dot'} };
 
         let tracesLine = [], tracesBar = [], avgVal = 0;
@@ -131,7 +131,7 @@
 
     function renderAbsorcao(d) {
         const area = document.getElementById('render-area');
-        const metaLine = { x: DB.meses, y: Array(12).fill(d.meta), name: 'Meta', type: 'scatter', mode: 'lines', line: {color: '#ef4444', width: 2, dash: 'dot'} };
+        const metaLine = { x: DB.meses, y: Array(12).fill(d.meta), name: `Meta (${d.meta}%)`, type: 'scatter', mode: 'lines', line: {color: '#ef4444', width: 2, dash: 'dot'} };
         
         if (activeYear === 'comparativo') {
             const avg24 = (d.v2024.reduce((a,b)=>a+b,0)/12);
@@ -141,8 +141,8 @@
             Plotly.newPlot('chart-evol', [{x:DB.meses, y:d.v2024, name:'2024', type:'scatter', mode:'lines+markers+text', text: d.v2024.map(v=>v.toFixed(1)), line:{color:'#cbd5e1', shape: 'spline'}}, {x:DB.meses, y:d.v2025, name:'2025', type:'scatter', mode:'lines+markers+text', text: d.v2025.map(v=>v.toFixed(1)), line:{width:3, color:d.color, shape: 'spline'}}, metaLine], {margin:{t:30,b:40,l:40,r:10}, paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)'}, configNoButtons);
         } else {
             const curV = activeYear==='2024'?d.v2024:d.v2025;
-            area.innerHTML = `<div class="card col-12"><div class="card-title">Absorção Geral</div><div id="chart-evol" style="height:350px"></div></div>`;
-            Plotly.newPlot('chart-evol', [{x:DB.meses, y:curV, type:'scatter', mode: 'lines+markers+text', text: curV.map(v=>v), line:{color:d.color, width:3, shape:'spline'}}, metaLine], {margin:{t:30,b:40,l:40,r:10}, paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)'}, configNoButtons);
+            area.innerHTML = `<div class="card col-12"><div class="card-title">Absorção Geral</div><div id="chart-evol" style="height:400px"></div></div>`;
+            Plotly.newPlot('chart-evol', [{x:DB.meses, y:curV, type:'scatter', mode: 'lines+markers+text', text: curV.map(v=>v.toFixed(1)+'%'), textposition: 'top center', line:{color:d.color, width:3, shape:'spline'}}, metaLine], {margin:{t:30,b:40,l:40,r:10}, paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)'}, configNoButtons);
         }
     }
 
