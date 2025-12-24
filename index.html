@@ -2,30 +2,34 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <script>
-        // --- CONFIGURAÇÃO DE ACESSO ---
-        const SENHA_CORRETA = "GEASI2025"; // Mude sua senha aqui
-        
-        function verificarAcesso() {
-            const senhaDigitada = prompt("Por favor, digite a senha para acessar o Dashboard:");
-            if (senhaDigitada !== SENHA_CORRETA) {
-                alert("Senha incorreta. Acesso negado.");
-                document.body.innerHTML = "<h1 style='font-family:sans-serif; text-align:center; margin-top:100px;'>Acesso Restrito</h1>";
-                window.stop();
-            }
-        }
-        verificarAcesso();
-    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Direção Clínica - HU</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
+        /* --- CSS DE PROTEÇÃO E ESTRUTURA --- */
+        #conteudo-protegido { display: none; } /* Escondido por padrão */
+        
+        #tela-bloqueio { 
+            display: flex; flex-direction: column; align-items: center; 
+            justify-content: center; height: 100vh; font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9; color: #1e293b;
+        }
+
+        .btn-acesso {
+            padding: 12px 24px; background: #1e293b; color: white; 
+            border: none; border-radius: 10px; cursor: pointer; 
+            margin-top: 20px; font-weight: 600; transition: 0.3s;
+        }
+        .btn-acesso:hover { background: #334155; }
+
         :root {
             --col-ocupacao: #0d9488; --col-permanencia: #ea580c; --col-giro: #0284c7;
             --col-absorcao: #16a34a; --col-conversao: #475569; --col-reinternacao: #7c3aed;
             --bg-body: #f1f5f9; --text-main: #1e293b; --card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
         }
+
         body { font-family: 'Inter', sans-serif; background-color: var(--bg-body); color: var(--text-main); margin: 0; padding: 24px; }
         
         .header { 
@@ -65,36 +69,63 @@
         
         .footer-credits { margin-top: 30px; text-align: right; font-size: 0.65rem; color: #94a3b8; font-weight: 500; letter-spacing: 0.05em; }
     </style>
+
+    <script>
+        // --- LÓGICA DE ACESSO ---
+        const SENHA_CORRETA = "GEASI2025";
+
+        function validarAcesso() {
+            const senha = prompt("Digite a senha de acesso ao Dashboard:");
+            if (senha === SENHA_CORRETA) {
+                document.getElementById('tela-bloqueio').style.display = 'none';
+                document.getElementById('conteudo-protegido').style.display = 'block';
+                renderDashboard(); // Carrega os gráficos após liberar
+            } else {
+                alert("Senha incorreta! O conteúdo permanecerá bloqueado.");
+            }
+        }
+
+        window.onload = () => { validarAcesso(); };
+    </script>
 </head>
+
 <body>
 
-<div class="header">
-    <h1>Indicadores Estratégicos HU</h1>
-    <div class="header-tag">Última atualização: Dez/2025</div>
-</div>
+    <div id="tela-bloqueio">
+        <div style="font-size: 50px; margin-bottom: 20px;">🔒</div>
+        <h2 style="margin: 0;">Acesso Restrito</h2>
+        <p style="color: #64748b; margin-top: 10px;">Este dashboard contém dados sensíveis.</p>
+        <button class="btn-acesso" onclick="validarAcesso()">Digite a senha para liberar acesso</button>
+    </div>
 
-<div class="nav-container">
-    <button class="nav-tab active" data-m="ocupacao" onclick="changeTab('ocupacao')">Taxa de Ocupação</button>
-    <button class="nav-tab" data-m="permanencia" onclick="changeTab('permanencia')">Permanência</button>
-    <button class="nav-tab" data-m="giro" onclick="changeTab('giro')">Giro de Leito</button>
-    <button class="nav-tab" data-m="absorcao" onclick="changeTab('absorcao')">Absorção Cirúrgica</button>
-    <button class="nav-tab" data-m="conversao" onclick="changeTab('conversao')">Conversão PS</button>
-    <button class="nav-tab" data-m="reinternacao" onclick="changeTab('reinternacao')">Reinternação</button>
-</div>
+    <div id="conteudo-protegido">
+        <div class="header">
+            <h1>Indicadores Estratégicos HU</h1>
+            <div class="header-tag">Última atualização: Dez/2025</div>
+        </div>
 
-<div id="filter-area"></div>
-<div id="render-area" class="dashboard-grid"></div>
+        <div class="nav-container">
+            <button class="nav-tab active" data-m="ocupacao" onclick="changeTab('ocupacao')">Taxa de Ocupação</button>
+            <button class="nav-tab" data-m="permanencia" onclick="changeTab('permanencia')">Permanência</button>
+            <button class="nav-tab" data-m="giro" onclick="changeTab('giro')">Giro de Leito</button>
+            <button class="nav-tab" data-m="absorcao" onclick="changeTab('absorcao')">Absorção Cirúrgica</button>
+            <button class="nav-tab" data-m="conversao" onclick="changeTab('conversao')">Conversão PS</button>
+            <button class="nav-tab" data-m="reinternacao" onclick="changeTab('reinternacao')">Reinternação</button>
+        </div>
 
-<div class="footer-credits">Beatryz Rodrigues - Analista Administrativo GEASI</div>
+        <div id="filter-area"></div>
+        <div id="render-area" class="dashboard-grid"></div>
+
+        <div class="footer-credits">Beatryz Rodrigues - Analista Administrativo GEASI</div>
+    </div>
 
 <script>
-    // [O restante do código JavaScript que enviamos antes continua exatamente igual aqui]
     const configNoButtons = { displayModeBar: false, responsive: true };
     const DB = {
         meses: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],
-        ocupacao: { color: '#0d9488', v2024: [77.8, 83.1, 84.5, 83.1, 77.0, 77.4, 76.7, 75.7, 75.0, 72.4, 71.2, 69.4], v2025: [71.6, 71.5, 72.9, 75.2, 74.8, 70.2, 71.3, 69.4, 72.0, 72.3, 72.7], labels: ['Cardio', 'UCO', 'CMED 1', 'CMED 3', 'CLIC.', 'Ped', 'UTIP', 'UTIG 1', 'UTIG 2.', 'Onco'], s2024: [89.1, 73.5, 94.2, 96.5, 76.8, 81.2, 78.5, 72.3, 87.4, 79.9], s2025: [86.8, 77.2, 93.6, 93.9, 73.8, 76.2, 75.8, 79.1, 88.5, 77.0], meta: 85, unit: '%' },
-        permanencia: { color: '#ea580c', v2024: [5.10, 4.95, 4.75, 5.08, 5.13, 5.24, 5.38, 5.03, 5.21, 5.21, 5.08, 5.17], v2025: [5.31, 4.88, 5.50, 5.51, 5.18, 5.11, 4.90, 4.66, 5.35, 4.11, 4.72], labels: ['CMED 3', 'UTIP', 'Onco', 'UTIG 1', 'UTIG 2', 'CMED 1', 'Ped', 'Cardio', 'UCO', 'CLIC'], s2024: [6.18, 6.38, 6.31, 5.74, 5.21, 4.92, 3.71, 3.62, 3.03, 1.77], s2025: [8.35, 7.12, 6.69, 5.83, 4.69, 5.26, 3.67, 3.63, 2.94, 1.70], meta: 5.0, unit: ' dias' },
-        giro: { color: '#0284c7', v2024: [4.73, 4.86, 5.52, 4.93, 4.65, 4.45, 4.41, 4.67, 4.31, 4.29, 4.20, 4.15], v2025: [4.18, 4.08, 4.10, 4.10, 4.49, 8.24, 4.53, 4.66, 4.52, 4.73, 4.63], labels: ['CLIC', 'UCO', 'Cardio', 'Ped', 'CMED 1', 'UTIG 2', 'UTIG 1', 'CMED 3', 'Onco', 'UTIP'], s2024: [13.42, 7.79, 7.53, 6.47, 5.82, 4.63, 4.55, 4.52, 3.65, 3.49], s2025: [14.86, 8.58, 8.16, 7.33, 6.13, 5.68, 5.12, 4.05, 3.96, 3.62], meta: 4.5, unit: ' saídas' },
+        ocupacao: { color: '#0d9488', v2024: [77.8, 83.1, 84.5, 83.1, 77.0, 77.4, 76.7, 75.7, 75.0, 72.4, 71.2, 69.4], v2025: [71.6, 71.5, 72.9, 75.2, 74.8, 70.2, 71.3, 69.4, 72.0, 72.3, 72.7], labels: ['Cardio', 'U.Coron.', 'Clin.M I', 'Clin.M III', 'Cirúrg.', 'Pediat.', 'UTI Ped', 'UTI 2', 'UTI Ad.', 'Onco'], s2024: [89.1, 73.5, 94.2, 96.5, 76.8, 81.2, 78.5, 72.3, 87.4, 79.9], s2025: [86.8, 77.2, 93.6, 93.9, 73.8, 76.2, 75.8, 79.1, 88.5, 77.0], meta: 85, unit: '%' },
+        permanencia: { color: '#ea580c', v2024: [5.10, 4.95, 4.75, 5.08, 5.13, 5.24, 5.38, 5.03, 5.21, 5.21, 5.08, 5.17], v2025: [5.31, 4.88, 5.50, 5.51, 5.18, 5.11, 4.90, 4.66, 5.35, 4.11, 4.72], labels: ['Clin. M III', 'UTI Ped', 'Onco', 'UTI Ad', 'UTI 2', 'Clin. M I', 'Ped', 'Cardio', 'U.Coron', 'Cirúrg.'], s2024: [6.18, 6.38, 6.31, 5.74, 5.21, 4.92, 3.71, 3.62, 3.03, 1.77], s2025: [8.35, 7.12, 6.69, 5.83, 4.69, 5.26, 3.67, 3.63, 2.94, 1.70], meta: 5.0, unit: ' dias' },
+        giro: { color: '#0284c7', v2024: [4.73, 4.86, 5.52, 4.93, 4.65, 4.45, 4.41, 4.67, 4.31, 4.29, 4.20, 4.15], v2025: [4.18, 4.08, 4.10, 4.10, 4.49, 8.24, 4.53, 4.66, 4.52, 4.73, 4.63], labels: ['Cirúrgica', 'U.Coron', 'Cardio', 'Pediat.', 'Clin. M I', 'UTI 2', 'UTI Ad', 'Clin. M III', 'Onco', 'UTI Ped'], s2024: [13.42, 7.79, 7.53, 6.47, 5.82, 4.63, 4.55, 4.52, 3.65, 3.49], s2025: [14.86, 8.58, 8.16, 7.33, 6.13, 5.68, 5.12, 4.05, 3.96, 3.62], meta: 4.5, unit: ' saídas' },
         absorcao: { color: '#16a34a', v2024: [49.59, 61.54, 60.87, 50.0, 59.38, 59.7, 59.65, 58.93, 60.99, 64.49, 44.1, 52.53], v2025: [54.55, 44.33, 47.79, 55.0, 55.0, 65.81, 58.87, 49.46, 55.56, 65.44, 55.93], meta: 60, unit: '%' },
         conversao: { color: '#475569', v2024: [5.13, 3.99, 3.93, 3.97, 4.76, 4.79, 4.55, 5.10, 4.47, 4.59, 4.25, 4.69], v2025: [5.05, 5.13, 4.72, 4.30, 4.14, 4.55, 4.50, 4.78, 4.49], meta: 4.5, unit: '%' },
         reinternacao: { color: '#7c3aed', v2024: [7.30, 6.48, 6.40, 5.90, 6.15, 5.97, 6.23, 8.43, 5.41, 4.86, 5.67, 5.61], v2025: [5.85, 7.53, 7.38, 6.77, 6.59, 8.20, 5.53, 7.64, 7.80], meta: 6.0, unit: '%' }
@@ -174,7 +205,6 @@
         document.getElementById('filter-area').innerHTML = `<div class="filter-container"><button class="btn-filter ${activeYear==='2024'?'active':''}" onclick="setYear('2024')">2024</button><button class="btn-filter ${activeYear==='2025'?'active':''}" onclick="setYear('2025')">2025</button><button class="btn-filter ${activeYear==='comparativo'?'active':''}" onclick="setYear('comparativo')">Comparativo</button></div>`;
         if (activeTab === 'absorcao') renderAbsorcao(d); else renderStandard(d);
     }
-    renderDashboard();
 </script>
 </body>
 </html>
