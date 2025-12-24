@@ -2,8 +2,22 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
+    <script>
+        // --- CONFIGURAÇÃO DE ACESSO ---
+        const SENHA_CORRETA = "GEASI2025"; // Mude sua senha aqui
+        
+        function verificarAcesso() {
+            const senhaDigitada = prompt("Por favor, digite a senha para acessar o Dashboard:");
+            if (senhaDigitada !== SENHA_CORRETA) {
+                alert("Senha incorreta. Acesso negado.");
+                document.body.innerHTML = "<h1 style='font-family:sans-serif; text-align:center; margin-top:100px;'>Acesso Restrito</h1>";
+                window.stop();
+            }
+        }
+        verificarAcesso();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Direção Clínica - HU v10.0</title>
+    <title>Dashboard Direção Clínica - HU</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -45,14 +59,11 @@
         .card-title { font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: #475569; }
         .dot { width: 10px; height: 10px; border-radius: 3px; }
         
-        /* Ajuste do Valor Central do Gauge */
         .gauge-kpi-container { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .kpi-val-main { font-size: 2.8rem; font-weight: 800; margin-top: -50px; z-index: 10; letter-spacing: -0.05em; }
         .kpi-sub-meta { font-size: 0.75rem; color: #94a3b8; font-weight: 500; margin-top: 5px; }
         
         .footer-credits { margin-top: 30px; text-align: right; font-size: 0.65rem; color: #94a3b8; font-weight: 500; letter-spacing: 0.05em; }
-        .val-negative { color: #dc2626 !important; }
-        .val-positive { color: #16a34a !important; }
     </style>
 </head>
 <body>
@@ -77,6 +88,7 @@
 <div class="footer-credits">Beatryz Rodrigues - Analista Administrativo GEASI</div>
 
 <script>
+    // [O restante do código JavaScript que enviamos antes continua exatamente igual aqui]
     const configNoButtons = { displayModeBar: false, responsive: true };
     const DB = {
         meses: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],
@@ -111,7 +123,6 @@
             </div>`;
         if (d.labels) area.innerHTML += `<div class="card col-12"><div class="card-title"><div class="dot" style="background:${d.color}"></div>Performance Unidades</div><div id="chart-setores" style="height:380px"></div></div>`;
 
-        // Configuração do Gauge Estilizado
         Plotly.newPlot('chart-gauge', [{
             type: "indicator", mode: "gauge", value: avgVal,
             gauge: {
@@ -121,7 +132,6 @@
             }
         }], { margin: {t:40, b:0, l:40, r:40}, paper_bgcolor: 'rgba(0,0,0,0)' }, configNoButtons);
 
-        // Gráficos de Evolução e Barras
         const metaLine = { x: DB.meses, y: Array(12).fill(d.meta), name: `Meta (${d.meta})`, type: 'scatter', mode: 'lines', line: {color: '#ef4444', width: 2, dash: 'dot'} };
         const layout = { margin: {t:30, b:40, l:40, r:10}, font: {family: 'Inter', color: '#64748b'}, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', xaxis: {gridcolor: '#f1f5f9'}, yaxis: {gridcolor: '#f1f5f9'} };
 
@@ -144,7 +154,6 @@
     function renderAbsorcao(d) {
         const area = document.getElementById('render-area');
         const metaLine = { x: DB.meses, y: Array(12).fill(d.meta), name: `Meta (${d.meta}%)`, type: 'scatter', mode: 'lines', line: {color: '#ef4444', width: 2, dash: 'dot'} };
-        
         if (activeYear === 'comparativo') {
             const avg24 = (d.v2024.reduce((a,b)=>a+b,0)/12);
             const avg25 = (d.v2025.reduce((a,b)=>a+b,0)/d.v2025.length);
