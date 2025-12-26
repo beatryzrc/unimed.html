@@ -164,11 +164,15 @@
             }, 10);
         }
 
-        // AJUSTE GAUGE: Aumentei margens (l e r) para 50 para os números 0 e 100 aparecerem
         Plotly.newPlot('chart-gauge', [{
             type: "indicator", mode: "gauge", value: avgVal,
             gauge: {
-                axis: { range: [0, (activeTab==='giro'||activeTab==='permanencia'? 15 : 100)], tickwidth: 1, tickcolor: "#cbd5e1" },
+                axis: { 
+                    range: [0, (activeTab==='giro'||activeTab==='permanencia'? 15 : 100)], 
+                    tickwidth: 1, 
+                    tickcolor: "#cbd5e1", // COR CLARA DOS TRACINHOS
+                    tickfont: { color: "#cbd5e1" } // COR CLARA DOS NÚMEROS (0, 20, 40...)
+                },
                 bar: { color: d.color, thickness: 0.25 },
                 bgcolor: "#f8fafc", borderwidth: 0
             }
@@ -176,7 +180,6 @@
 
         const metaLine = { x: DB.meses, y: Array(12).fill(d.meta), name: `Meta (${d.meta})`, type: 'scatter', mode: 'lines', line: {color: '#ef4444', width: 2, dash: 'dot'}, hoverinfo: 'skip' };
         
-        // AJUSTE HOVER: Definido como 'none' ou 'skip' para evitar a duplicidade da imagem
         let trace2024 = {x:DB.meses, y:d.v2024, name:'2024', type:'scatter', mode:'lines', line:{color:'#cbd5e1', shape:'spline'}, hoverinfo: 'none'};
         let trace2025 = {x:DB.meses, y:d.v2025, name:'2025', type:'scatter', mode:'lines+markers+text', text: d.v2025.map(v=>v?v.toFixed(1):''), textposition: 'top center', line:{color:d.color, width:3, shape:'spline'}, hoverinfo: 'none'};
 
