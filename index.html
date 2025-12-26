@@ -54,7 +54,7 @@
         .card-title { font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: #475569; }
         .dot { width: 10px; height: 10px; border-radius: 3px; }
         .gauge-kpi-container { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; }
-        .kpi-val-main { font-size: 2.8rem; font-weight: 800; margin-top: -60px; z-index: 10; letter-spacing: -0.05em; }
+        .kpi-val-main { font-size: 2.8rem; font-weight: 800; margin-top: -65px; z-index: 10; letter-spacing: -0.05em; }
         .kpi-sub-meta { font-size: 0.75rem; color: #94a3b8; font-weight: 500; margin-top: 5px; }
         .footer-credits { margin-top: 30px; text-align: right; font-size: 0.65rem; color: #94a3b8; font-weight: 500; letter-spacing: 0.05em; }
     </style>
@@ -160,7 +160,24 @@
                         text: currentY.map(v => v.toFixed(1)), textposition: 'outside', hoverinfo: 'none'
                     });
                 }
-                Plotly.newPlot('chart-setores', tracesS, { margin: {t:40, b:40, l:40, r:10}, barmode: 'group', font: {family: 'Inter', color: '#64748b'}, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', xaxis: {gridcolor: '#f1f5f9'}, yaxis: {gridcolor: '#f1f5f9'}, legend: {orientation: 'h', y: 1.1}}, configNoButtons);
+
+                // INICIO DA ALTERAÇÃO SOLICITADA: Adição da linha de meta
+                tracesS.push({
+                    x: sortedLabels, y: Array(sortedLabels.length).fill(d.meta),
+                    name: `Meta (${d.meta})`, type: 'scatter', mode: 'lines',
+                    line: {color: '#ef4444', width: 2, dash: 'dot'}, hoverinfo: 'skip'
+                });
+                // FIM DA ALTERAÇÃO SOLICITADA
+
+                Plotly.newPlot('chart-setores', tracesS, { 
+                    margin: {t:60, b:40, l:40, r:10}, 
+                    barmode: 'group', 
+                    font: {family: 'Inter', color: '#64748b'}, 
+                    paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', 
+                    xaxis: {gridcolor: '#f1f5f9'}, yaxis: {gridcolor: '#f1f5f9'}, 
+                    showlegend: true,
+                    legend: {orientation: 'h', x: 0.5, xanchor: 'center', y: 1.15}
+                }, configNoButtons);
             }, 10);
         }
 
@@ -170,13 +187,13 @@
                 axis: { 
                     range: [0, (activeTab==='giro'||activeTab==='permanencia'? 15 : 100)], 
                     tickwidth: 1, 
-                    tickcolor: "#cbd5e1", // COR CLARA DOS TRACINHOS
-                    tickfont: { color: "#cbd5e1" } // COR CLARA DOS NÚMEROS (0, 20, 40...)
+                    tickcolor: "#cbd5e1", 
+                    tickfont: { color: "#cbd5e1", size: 10 }
                 },
                 bar: { color: d.color, thickness: 0.25 },
                 bgcolor: "#f8fafc", borderwidth: 0
             }
-        }], { margin: {t:50, b:20, l:50, r:50}, paper_bgcolor: 'rgba(0,0,0,0)' }, configNoButtons);
+        }], { margin: {t:60, b:20, l:50, r:50}, paper_bgcolor: 'rgba(0,0,0,0)' }, configNoButtons);
 
         const metaLine = { x: DB.meses, y: Array(12).fill(d.meta), name: `Meta (${d.meta})`, type: 'scatter', mode: 'lines', line: {color: '#ef4444', width: 2, dash: 'dot'}, hoverinfo: 'skip' };
         
@@ -186,7 +203,14 @@
         let tracesLine = (activeYear === 'comparativo') ? [trace2024, trace2025, metaLine] :
             [{x:DB.meses, y:activeYear==='2024'?d.v2024:d.v2025, name:activeYear, type:'scatter', mode:'lines+markers+text', text: (activeYear==='2024'?d.v2024:d.v2025).map(v=>v?v.toFixed(1):''), textposition: 'top center', line:{color:d.color, width:3, shape:'spline'}, hoverinfo: 'none'}, metaLine];
 
-        Plotly.newPlot('chart-evol', tracesLine, { margin: {t:30, b:40, l:40, r:10}, font: {family: 'Inter', color: '#64748b'}, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', xaxis: {gridcolor: '#f1f5f9'}, yaxis: {gridcolor: '#f1f5f9'}, showlegend: true, legend: {orientation: 'h', y: 1.1}}, configNoButtons);
+        Plotly.newPlot('chart-evol', tracesLine, { 
+            margin: {t:60, b:40, l:40, r:10}, 
+            font: {family: 'Inter', color: '#64748b'}, 
+            paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', 
+            xaxis: {gridcolor: '#f1f5f9'}, yaxis: {gridcolor: '#f1f5f9'}, 
+            showlegend: true, 
+            legend: {orientation: 'h', x: 0.5, xanchor: 'center', y: 1.15}
+        }, configNoButtons);
     }
 
     function renderAbsorcao(d) {
@@ -212,13 +236,13 @@
                     {x:DB.meses, y:d.v2024, name:'2024', type:'scatter', mode:'lines', line:{color:'#cbd5e1', shape: 'spline'}, hoverinfo: 'none'}, 
                     {x:DB.meses, y:d.v2025, name:'2025', type:'scatter', mode:'lines+markers+text', text: d.v2025.map(v=>v?v.toFixed(1):''), textposition: 'top center', line:{width:3, color:d.color, shape: 'spline'}, hoverinfo: 'none'}, 
                     metaLine
-                ], {margin:{t:30,b:40,l:40,r:10}, paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)', font: {family: 'Inter', color: '#64748b'}}, configNoButtons);
+                ], {margin:{t:60,b:40,l:40,r:10}, paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)', font: {family: 'Inter', color: '#64748b'}, showlegend: true, legend: {orientation: 'h', x: 0.5, xanchor: 'center', y: 1.15}}, configNoButtons);
             }, 10);
         } else {
             const curV = activeYear==='2024'?d.v2024:d.v2025;
             area.innerHTML = `<div class="card col-12"><div class="card-title">Evolução Absorção</div><div id="chart-evol" style="height:400px"></div></div>`;
             setTimeout(() => {
-                Plotly.newPlot('chart-evol', [{x:DB.meses, y:curV, type:'scatter', mode:'lines+markers+text', text: curV.map(v=>v?v.toFixed(1)+'%':''), textposition: 'top center', line:{color:d.color, width:3, shape:'spline'}, hoverinfo: 'none'}, metaLine], {margin:{t:30,b:40,l:40,r:10}, paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)', font: {family: 'Inter', color: '#64748b'}}, configNoButtons);
+                Plotly.newPlot('chart-evol', [{x:DB.meses, y:curV, type:'scatter', mode:'lines+markers+text', text: curV.map(v=>v?v.toFixed(1)+'%':''), textposition: 'top center', line:{color:d.color, width:3, shape:'spline'}, hoverinfo: 'none'}, metaLine], {margin:{t:60,b:40,l:40,r:10}, paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)', font: {family: 'Inter', color: '#64748b'}}, configNoButtons);
             }, 10);
         }
     }
