@@ -53,8 +53,8 @@
         .col-12 { grid-column: span 12; } .col-8 { grid-column: span 8; } .col-4 { grid-column: span 4; }
         .card-title { font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: #475569; }
         .dot { width: 10px; height: 10px; border-radius: 3px; }
-        .gauge-kpi-container { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .kpi-val-main { font-size: 2.8rem; font-weight: 800; margin-top: -50px; z-index: 10; letter-spacing: -0.05em; }
+        .gauge-kpi-container { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; }
+        .kpi-val-main { font-size: 2.8rem; font-weight: 800; margin-top: -60px; z-index: 10; letter-spacing: -0.05em; }
         .kpi-sub-meta { font-size: 0.75rem; color: #94a3b8; font-weight: 500; margin-top: 5px; }
         .footer-credits { margin-top: 30px; text-align: right; font-size: 0.65rem; color: #94a3b8; font-weight: 500; letter-spacing: 0.05em; }
     </style>
@@ -128,7 +128,7 @@
             <div class="card col-4" style="justify-content: center;">
                 <div class="card-title" style="align-self: flex-start;"><div class="dot" style="background:${d.color}"></div>Média do Período</div>
                 <div class="gauge-kpi-container">
-                    <div id="chart-gauge" style="height:250px; width:100%;"></div>
+                    <div id="chart-gauge" style="height:280px; width:100%;"></div>
                     <div class="kpi-val-main" style="color:${d.color}">${avgVal.toFixed(2)}${d.unit}</div>
                     <div class="kpi-sub-meta">Meta: ${d.meta}${d.unit}</div>
                 </div>
@@ -138,10 +138,7 @@
             area.innerHTML += `<div class="card col-12"><div class="card-title"><div class="dot" style="background:${d.color}"></div>Performance Unidades</div><div id="chart-setores" style="height:380px"></div></div>`;
             setTimeout(() => {
                 let combined = d.labels.map((label, i) => ({ label: label, v24: d.s2024[i], v25: d.s2025[i] }));
-                
-                // Ordena sempre pelo valor de 2025 (decrescente)
                 combined.sort((a, b) => b.v25 - a.v25);
-                
                 let sortedLabels = combined.map(item => item.label);
                 let sorted24 = combined.map(item => item.v24);
                 let sorted25 = combined.map(item => item.v25);
@@ -163,17 +160,11 @@
                         text: currentY.map(v => v.toFixed(1)), textposition: 'outside', hoverinfo: 'none'
                     });
                 }
-
-                Plotly.newPlot('chart-setores', tracesS, { 
-                    margin: {t:40, b:40, l:40, r:10}, barmode: 'group',
-                    font: {family: 'Inter', color: '#64748b'}, 
-                    paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', 
-                    xaxis: {gridcolor: '#f1f5f9'}, yaxis: {gridcolor: '#f1f5f9'},
-                    legend: {orientation: 'h', y: 1.1}
-                }, configNoButtons);
+                Plotly.newPlot('chart-setores', tracesS, { margin: {t:40, b:40, l:40, r:10}, barmode: 'group', font: {family: 'Inter', color: '#64748b'}, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', xaxis: {gridcolor: '#f1f5f9'}, yaxis: {gridcolor: '#f1f5f9'}, legend: {orientation: 'h', y: 1.1}}, configNoButtons);
             }, 10);
         }
 
+        // AJUSTE GAUGE: Aumentei margens (l e r) para 50 para os números 0 e 100 aparecerem
         Plotly.newPlot('chart-gauge', [{
             type: "indicator", mode: "gauge", value: avgVal,
             gauge: {
@@ -181,11 +172,12 @@
                 bar: { color: d.color, thickness: 0.25 },
                 bgcolor: "#f8fafc", borderwidth: 0
             }
-        }], { margin: {t:40, b:0, l:40, r:40}, paper_bgcolor: 'rgba(0,0,0,0)' }, configNoButtons);
+        }], { margin: {t:50, b:20, l:50, r:50}, paper_bgcolor: 'rgba(0,0,0,0)' }, configNoButtons);
 
         const metaLine = { x: DB.meses, y: Array(12).fill(d.meta), name: `Meta (${d.meta})`, type: 'scatter', mode: 'lines', line: {color: '#ef4444', width: 2, dash: 'dot'}, hoverinfo: 'skip' };
         
-        let trace2024 = {x:DB.meses, y:d.v2024, name:'2024', type:'scatter', mode:'lines', line:{color:'#cbd5e1', shape:'spline'}, hoverinfo: 'y+name'};
+        // AJUSTE HOVER: Definido como 'none' ou 'skip' para evitar a duplicidade da imagem
+        let trace2024 = {x:DB.meses, y:d.v2024, name:'2024', type:'scatter', mode:'lines', line:{color:'#cbd5e1', shape:'spline'}, hoverinfo: 'none'};
         let trace2025 = {x:DB.meses, y:d.v2025, name:'2025', type:'scatter', mode:'lines+markers+text', text: d.v2025.map(v=>v?v.toFixed(1):''), textposition: 'top center', line:{color:d.color, width:3, shape:'spline'}, hoverinfo: 'none'};
 
         let tracesLine = (activeYear === 'comparativo') ? [trace2024, trace2025, metaLine] :
@@ -214,7 +206,7 @@
             
             setTimeout(() => {
                 Plotly.newPlot('chart-evol', [
-                    {x:DB.meses, y:d.v2024, name:'2024', type:'scatter', mode:'lines', line:{color:'#cbd5e1', shape: 'spline'}, hoverinfo: 'y'}, 
+                    {x:DB.meses, y:d.v2024, name:'2024', type:'scatter', mode:'lines', line:{color:'#cbd5e1', shape: 'spline'}, hoverinfo: 'none'}, 
                     {x:DB.meses, y:d.v2025, name:'2025', type:'scatter', mode:'lines+markers+text', text: d.v2025.map(v=>v?v.toFixed(1):''), textposition: 'top center', line:{width:3, color:d.color, shape: 'spline'}, hoverinfo: 'none'}, 
                     metaLine
                 ], {margin:{t:30,b:40,l:40,r:10}, paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)', font: {family: 'Inter', color: '#64748b'}}, configNoButtons);
